@@ -3,7 +3,7 @@
 from argparse import ArgumentParser
 from asyncio.log import logger
 from os import environ, getcwd, listdir, remove
-from os.path import isdir, isfile, join, split, abspath
+from os.path import abspath, isdir, isfile, join, split
 from shutil import which
 from sys import stderr
 
@@ -84,12 +84,14 @@ def activate():
 
 
 def deactivate():
+    conda_environment_name = environ.get("CONDA_DEFAULT_ENV", "")
+
     if environ.get("VIRTUAL_ENV", ""):
         __return_command("deactivate")
 
     # Do not deactivate conda base environment.
     # TODO: expose possibility to change this
-    elif conda_environment_name := environ.get("CONDA_DEFAULT_ENV", ""):
+    elif conda_environment_name:
         if conda_environment_name != "base":
             __return_command("conda deactivate")
 
