@@ -156,7 +156,7 @@ def __find_nearest_environment_file(
     for environment_files_list in [TYPE_TO_FILES[type] for type in priority]:
         for environment_file in environment_files_list:
             if environment_file in directory_content:
-                return FILE_TO_TYPE[environment_file], environment
+                return FILE_TO_TYPE[environment_file], join(directory, environment_file)
 
     parent_directory, not_root_directory = split(directory)
     if not_root_directory:
@@ -172,7 +172,7 @@ def __parse_conda_environment_file(environment_file):
 
     try:
         with open(environment_file, "r") as file:
-            env = yaml.safe_load(stream)
+            env = yaml.safe_load(file)
             return env.get('name', environment_file)
     except:
         raise Exception(
