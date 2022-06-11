@@ -6,6 +6,7 @@ from os import environ, getcwd, listdir, remove
 from os.path import abspath, isdir, isfile, join, split
 from shutil import which
 from sys import stderr
+import yaml
 
 ##########################
 ##### Some Constants #####
@@ -136,7 +137,7 @@ def __return_command(shell_command):
 
 
 def __find_nearest_environment_file(
-    directory=getcwd(), priority=[LINKED_TYPE, POETRY_TYPE, VENV_TYPE, CONDA_TYPE]
+    directory=getcwd(), priority=[CONDA_TYPE, LINKED_TYPE, POETRY_TYPE, VENV_TYPE]
 ):
 
     if any([environment_type not in TYPE_TO_FILES.keys() for environment_type in priority]) or any(
@@ -155,7 +156,13 @@ def __find_nearest_environment_file(
     for environment_files_list in [TYPE_TO_FILES[type] for type in priority]:
         for environment_file in environment_files_list:
             if environment_file in directory_content:
-                return FILE_TO_TYPE[environment_file], join(directory, environment_file)
+                type = FILE_TO_TYPE[environment_file]
+                if type == CONDA_TYPE:
+                    environment_name = join(directory, environment_file)
+                    with open(environment_file, "r") as stream:
+                        env = yaml.safe_load(stream)
+                            
+                    return type, environment
 
     parent_directory, not_root_directory = split(directory)
     if not_root_directory:
@@ -163,11 +170,25 @@ def __find_nearest_environment_file(
     else:
         return None
 
+def __parse_conda_environment_file(environment_file):
+    if not isfile(environment_file):
+        raise ValueError(
+            f"Found conda environment file is not a file. Check: {environment_file}"
+        )
+
+    try:
+        with open(environment_file, "r") as file:
+            env = yaml.safe_load(stream)
+            return env.get('name', environment_file)
+    except:
+        raise Exception(
+            f"Something went wrong! Is the environment file malformed? - Check: {environment_file}"
+        )
 
 def __parse_linked_environment_file(linked_environment_file):
     if not isfile(linked_environment_file):
         raise ValueError(
-            f"Found linked environment file ist not a file. Check: {linked_environment_file}"
+            f"Found linked environment file is not a file. Check: {linked_environment_file}"
         )
 
     try:
@@ -220,7 +241,10 @@ def __handle_environment_file(type, environment_file_or_name):
 
     elif type == CONDA_TYPE:
         if __check_dependencies(CONDA_TYPE):
-            __return_command(f"conda activate {environment_file_or_name}")
+             environment_path_or_name = __parse_conda_environment_file(
+                 environment_file_or_name
+            )
+            __return_command(f"conda activate {environment_path_or_name}")
             __print_activation_message(type)
 
     else:
