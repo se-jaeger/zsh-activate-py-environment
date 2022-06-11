@@ -241,8 +241,8 @@ def __handle_environment_file(type, environment_file_or_name):
 
     elif type == CONDA_TYPE:
         if __check_dependencies(CONDA_TYPE):
-             environment_path_or_name = __parse_conda_environment_file(
-                 environment_file_or_name
+            environment_path_or_name = __parse_conda_environment_file(
+                environment_file_or_name
             )
             __return_command(f"conda activate {environment_path_or_name}")
             __print_activation_message(type)
