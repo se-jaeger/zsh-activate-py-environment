@@ -21,7 +21,7 @@ SUPPORTED_ENVIRONMENT_TYPES = [CONDA_TYPE, VENV_TYPE, POETRY_TYPE]
 LINKED_ENV_FILES = [".linked_env"]
 POETRY_FILES = ["poetry.lock"]
 VENV_FILES = ["venv", ".venv"]
-CONDA_FILES = ["environment.yaml"]
+CONDA_FILES = ["environment.yaml", "environment.yml"]
 
 TYPE_TO_FILES = {
     LINKED_TYPE: LINKED_ENV_FILES,
