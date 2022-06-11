@@ -156,13 +156,7 @@ def __find_nearest_environment_file(
     for environment_files_list in [TYPE_TO_FILES[type] for type in priority]:
         for environment_file in environment_files_list:
             if environment_file in directory_content:
-                type = FILE_TO_TYPE[environment_file]
-                if type == CONDA_TYPE:
-                    environment_name = join(directory, environment_file)
-                    with open(environment_file, "r") as stream:
-                        env = yaml.safe_load(stream)
-                            
-                    return type, environment
+                return FILE_TO_TYPE[environment_file], environment
 
     parent_directory, not_root_directory = split(directory)
     if not_root_directory:
