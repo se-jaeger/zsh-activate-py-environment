@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 
 from argparse import ArgumentParser
-from asyncio.log import logger
 from os import environ, getcwd, listdir, remove
 from os.path import abspath, isdir, isfile, join, split
 from shutil import which
 from sys import stderr
-import yaml
+import sys
+import re
+
+try:
+    import yaml
+except ModuleNotFoundError:
+    pass
 
 ##########################
 ##### Some Constants #####
@@ -36,6 +41,7 @@ FILE_TO_TYPE = {
     for environment_file in environment_files_list
 }
 
+YAML_ENV_NAME_REGEX = re.compile(r'^\s*name:\s*([-\w]+)')
 
 ##########################
 ##### Main Functions #####
@@ -172,8 +178,15 @@ def __parse_conda_environment_file(environment_file):
 
     try:
         with open(environment_file, "r") as file:
-            env = yaml.safe_load(file)
-            return env.get('name', environment_file)
+            if 'yaml' in sys.modules:
+                env = yaml.safe_load(file)
+                return env.get('name', environment_file)
+            else:
+                for line in file:
+                    match = re.match(YAML_ENV_NAME_REGEX, line)
+                    if match:
+                        return match.group(1)
+                return environment_file
     except:
         raise Exception(
             f"Something went wrong! Is the environment file malformed? - Check: {environment_file}"
