@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
+import re
+import sys
 from argparse import ArgumentParser
+from distutils.log import error
 from os import environ, getcwd, listdir, remove
 from os.path import abspath, isdir, isfile, join, split
 from shutil import which
 from sys import stderr
-import sys
-import re
 
 try:
     import yaml
@@ -43,6 +44,13 @@ FILE_TO_TYPE = {
 
 YAML_ENV_NAME_REGEX = re.compile(r'^\s*name:\s*([-\w]+)')
 
+RED="\033[0;31m"
+GREEN="\033[0;32m"
+GRAY="\033[1;30m"
+NC="\033[0m"
+
+IS_FIRST_MESSAGE = True
+
 ##########################
 ##### Main Functions #####
 
@@ -54,6 +62,7 @@ def main():
     subparsers = parser.add_subparsers()
 
     # activate command
+    # TODO: after linking directory, this is called again and we print the message pre-fix twice
     parser_activate = subparsers.add_parser("activate")
     parser_activate.set_defaults(command_function=activate)
 
@@ -105,8 +114,9 @@ def deactivate():
 
 def link(environment_type, name_or_path):
     if any([linked_env_file in listdir() for linked_env_file in LINKED_ENV_FILES]):
-        raise Exception(
-            "This directory is already linked! You can remove this by using 'unlink_py_environment'"
+        __print_error_and_fail(
+            "This directory is already linked! You can remove this by using 'unlink_py_environment'",
+            error_code=17
         )
 
     if environment_type == VENV_TYPE:
@@ -117,6 +127,8 @@ def link(environment_type, name_or_path):
         with open(LINKED_ENV_FILES[0], "w") as file:
             file.write(f"{environment_type};{name_or_path}")
 
+    __print_success("Directory linked!", flush=True)
+
 
 def unlink():
     linked_files_in_working_directory = [file for file in LINKED_ENV_FILES if isfile(file)]
@@ -124,18 +136,38 @@ def unlink():
     if linked_files_in_working_directory:
         for file in linked_files_in_working_directory:
             remove(file)
+
     else:
         __print_information(
-            f"No file found that explicitly links this directory, looked for: {', '.join(LINKED_ENV_FILES)}"
+            f"No file found that explicitly links this directory, looked for: {', '.join(LINKED_ENV_FILES)}",
+            flush=False
         )
+
+    __print_success("Directory unlinked!", flush=True)
 
 
 ############################
 ##### Helper Functions #####
 
 
-def __print_information(message):
-    print(message, file=stderr)
+def __print_information(message, flush, color=GRAY):
+    global IS_FIRST_MESSAGE
+
+    message_prefix =  (f"{GRAY}" + "\n[ZSH Activate Python Environment]:\n") if IS_FIRST_MESSAGE else ""
+    after_newline = "\n" if flush else ""
+    msg = f"{message_prefix}{color}---> {message}{NC}{after_newline}"
+    
+    print(msg, file=stderr)
+    IS_FIRST_MESSAGE = False
+
+
+def __print_success(message, flush):
+    __print_information(message, flush=flush, color=GREEN)
+
+
+def __print_error_and_fail(message, error_code=1):
+    __print_information(message, flush=True, color=RED)
+    sys.exit(error_code)
 
 
 def __return_command(shell_command):
@@ -149,12 +181,16 @@ def __find_nearest_environment_file(
     if any([environment_type not in TYPE_TO_FILES.keys() for environment_type in priority]) or any(
         [type(environment_type) != str for environment_type in priority]
     ):
-        raise ValueError(
-            f"Only the following environment types (given as `str`) are supported! - {', '.join(TYPE_TO_FILES.keys())}"
+        __print_error_and_fail(
+            f"Only the following environment types (given as `str`) are supported! - {', '.join(TYPE_TO_FILES.keys())}",
+            error_code=22
         )
 
     if not isdir(directory):
-        raise ValueError("Parameter `directory` need to be a valid directory!")
+        __print_error_and_fail(
+            "Parameter `directory` need to be a valid directory!",
+            error_code=22
+        )
 
     directory_content = listdir(directory)
 
@@ -170,45 +206,46 @@ def __find_nearest_environment_file(
     else:
         return None
 
-def __parse_conda_environment_file(environment_file):
-    if not isfile(environment_file):
-        raise ValueError(
-            f"Found conda environment file is not a file. Check: {environment_file}"
-        )
-
+def __parse_conda_env_file_and_get_name(environment_file):
     try:
         with open(environment_file, "r") as file:
-            if 'yaml' in sys.modules:
+            if "yaml" in sys.modules:
                 env = yaml.safe_load(file)
-                return env.get('name', environment_file)
+                return env["name"]
             else:
                 for line in file:
                     match = re.match(YAML_ENV_NAME_REGEX, line)
                     if match:
                         return match.group(1)
-                return environment_file
+                
+                # jump to `except` block
+                raise Exception()
     except:
-        raise Exception(
-            f"Something went wrong! Is the environment file malformed? - Check: {environment_file}"
+        __print_error_and_fail(
+            f"Something went wrong! Is the environment file malformed? - Check: {environment_file}",
+            error_code=1
         )
 
 def __parse_linked_environment_file(linked_environment_file):
     if not isfile(linked_environment_file):
-        raise ValueError(
-            f"Found linked environment file is not a file. Check: {linked_environment_file}"
+        __print_error_and_fail(
+            f"Found linked environment file is not a file. Check: {linked_environment_file}",
+            error_code=2
         )
 
     try:
         with open(linked_environment_file, "r") as file:
             environment_type, environment_path_or_name = file.read().split(";")
     except:
-        raise Exception(
-            f"Something went wrong! Is the linked environment file malformed? - Check: {linked_environment_file}"
+        __print_error_and_fail(
+            f"Something went wrong! Is the linked environment file malformed? - Check: {linked_environment_file}",
+            error_code=1
         )
 
     if environment_type not in SUPPORTED_ENVIRONMENT_TYPES:
-        raise Exception(
-            f"The given environment type in the linked environment file is not supported. Type: {environment_type} found in: {linked_environment_file}"
+        __print_error_and_fail(
+            f"The given environment type in the linked environment file is not supported. Type: {environment_type} found in: {linked_environment_file}",
+            error_code=22
         )
 
     return environment_type.strip(), environment_path_or_name.strip()
@@ -218,22 +255,20 @@ def __check_dependencies(command):
     if which(command):
         return True
     else:
-        __print_information(f"Necessary dependency '{command}' not installed, omitting this!")
+        __print_information(f"Necessary dependency '{command}' not installed, omitting this!", flush=False)
         return False
 
 
 def __print_activation_message(environment_type):
-    __print_information(f"\n🐍 Try to activate '{environment_type}' environment ...\n")
+    __print_information(f"Try to activate '{environment_type}' environment ... 🐍🐍", flush=True)
 
 
-def __handle_environment_file(type, environment_file_or_name):
+def __handle_environment_file(type, environment_path_file_or_name):
     if type == LINKED_TYPE:
         # either path to poetry/virtualenv or conda environment name.
         environment_type, environment_path_or_name = __parse_linked_environment_file(
-            environment_file_or_name
+            environment_path_file_or_name
         )
-
-        # TODO:How to handle conda? we get name here but use path..
         __handle_environment_file(environment_type, environment_path_or_name)
 
     elif type == POETRY_TYPE:
@@ -243,21 +278,25 @@ def __handle_environment_file(type, environment_file_or_name):
             __print_activation_message(type)
 
     elif type == VENV_TYPE:
-        __return_command(f"source {environment_file_or_name}/bin/activate")
+        __return_command(f"source {environment_path_file_or_name}/bin/activate")
         __print_activation_message(type)
 
     elif type == CONDA_TYPE:
         if __check_dependencies(CONDA_TYPE):
-            environment_path_or_name = __parse_conda_environment_file(
-                environment_file_or_name
-            )
-            __return_command(f"conda activate {environment_path_or_name}")
+            # It is env file, we parse it to get env name
+            if isfile(environment_path_file_or_name):
+                environment_path_file_or_name = __parse_conda_env_file_and_get_name(
+                    environment_path_file_or_name
+                )
+
+            __return_command(f"conda activate {environment_path_file_or_name}")
             __print_activation_message(type)
 
     else:
-        __print_information(
+        __print_error_and_fail(
             f"Something went wrong! Do not know environment type '{type}'. "
-            "Maybe this was extracted from an file that links this directory?",
+            "Maybe this was extracted from file that links this directory?",
+            error_code=0
         )
 
 
