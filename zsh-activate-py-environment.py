@@ -126,7 +126,7 @@ def unlink():
             remove(file)
     else:
         __print_information(
-            f"No file found that explicitely links this directory, looked for: {', '.join(LINKED_ENV_FILES)}"
+            f"No file found that explicitly links this directory, looked for: {', '.join(LINKED_ENV_FILES)}"
         )
 
 
@@ -218,7 +218,7 @@ def __check_dependencies(command):
     if which(command):
         return True
     else:
-        __print_information(f"Necessary dependency '{command}' not installed, omiting this!")
+        __print_information(f"Necessary dependency '{command}' not installed, omitting this!")
         return False
 
 
