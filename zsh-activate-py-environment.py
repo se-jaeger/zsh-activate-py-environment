@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
 
 from argparse import ArgumentParser
-from asyncio.log import logger
 from os import environ, getcwd, listdir, remove
 from os.path import abspath, isdir, isfile, join, split
 from shutil import which
 from sys import stderr
+import sys
+import re
+
+try:
+    import yaml
+except ModuleNotFoundError:
+    pass
 
 ##########################
 ##### Some Constants #####
@@ -20,7 +26,7 @@ SUPPORTED_ENVIRONMENT_TYPES = [CONDA_TYPE, VENV_TYPE, POETRY_TYPE]
 LINKED_ENV_FILES = [".linked_env"]
 POETRY_FILES = ["poetry.lock"]
 VENV_FILES = ["venv", ".venv"]
-CONDA_FILES = ["environment.yaml"]
+CONDA_FILES = ["environment.yaml", "environment.yml"]
 
 TYPE_TO_FILES = {
     LINKED_TYPE: LINKED_ENV_FILES,
@@ -35,6 +41,7 @@ FILE_TO_TYPE = {
     for environment_file in environment_files_list
 }
 
+YAML_ENV_NAME_REGEX = re.compile(r'^\s*name:\s*([-\w]+)')
 
 ##########################
 ##### Main Functions #####
@@ -119,7 +126,7 @@ def unlink():
             remove(file)
     else:
         __print_information(
-            f"No file found that explicitely links this directory, looked for: {', '.join(LINKED_ENV_FILES)}"
+            f"No file found that explicitly links this directory, looked for: {', '.join(LINKED_ENV_FILES)}"
         )
 
 
@@ -136,7 +143,7 @@ def __return_command(shell_command):
 
 
 def __find_nearest_environment_file(
-    directory=getcwd(), priority=[LINKED_TYPE, POETRY_TYPE, VENV_TYPE, CONDA_TYPE]
+    directory=getcwd(), priority=[CONDA_TYPE, LINKED_TYPE, POETRY_TYPE, VENV_TYPE]
 ):
 
     if any([environment_type not in TYPE_TO_FILES.keys() for environment_type in priority]) or any(
@@ -163,11 +170,32 @@ def __find_nearest_environment_file(
     else:
         return None
 
+def __parse_conda_environment_file(environment_file):
+    if not isfile(environment_file):
+        raise ValueError(
+            f"Found conda environment file is not a file. Check: {environment_file}"
+        )
+
+    try:
+        with open(environment_file, "r") as file:
+            if 'yaml' in sys.modules:
+                env = yaml.safe_load(file)
+                return env.get('name', environment_file)
+            else:
+                for line in file:
+                    match = re.match(YAML_ENV_NAME_REGEX, line)
+                    if match:
+                        return match.group(1)
+                return environment_file
+    except:
+        raise Exception(
+            f"Something went wrong! Is the environment file malformed? - Check: {environment_file}"
+        )
 
 def __parse_linked_environment_file(linked_environment_file):
     if not isfile(linked_environment_file):
         raise ValueError(
-            f"Found linked environment file ist not a file. Check: {linked_environment_file}"
+            f"Found linked environment file is not a file. Check: {linked_environment_file}"
         )
 
     try:
@@ -190,7 +218,7 @@ def __check_dependencies(command):
     if which(command):
         return True
     else:
-        __print_information(f"Necessary dependency '{command}' not installed, omiting this!")
+        __print_information(f"Necessary dependency '{command}' not installed, omitting this!")
         return False
 
 
@@ -220,7 +248,10 @@ def __handle_environment_file(type, environment_file_or_name):
 
     elif type == CONDA_TYPE:
         if __check_dependencies(CONDA_TYPE):
-            __return_command(f"conda activate {environment_file_or_name}")
+            environment_path_or_name = __parse_conda_environment_file(
+                environment_file_or_name
+            )
+            __return_command(f"conda activate {environment_path_or_name}")
             __print_activation_message(type)
 
     else:
