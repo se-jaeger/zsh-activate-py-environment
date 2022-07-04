@@ -42,7 +42,9 @@ FILE_TO_TYPE = {
     for environment_file in environment_files_list
 }
 
-YAML_ENV_NAME_REGEX = re.compile(r'^\s*name:\s*([-\w]+)')
+# conda env names are not allowed to contain: "/", " ", ":", "#"
+# see: https://github.com/conda/conda/blob/e23cd61c12a68149ab9387baea5fb9b4f34b40aa/conda/base/context.py#L1767-L1772
+YAML_ENV_NAME_REGEX = re.compile(r'^\s*name:\s*([^\/\s:#]*)')
 
 RED="\033[0;31m"
 GREEN="\033[0;32m"
