@@ -3,7 +3,6 @@
 import re
 import sys
 from argparse import ArgumentParser
-from distutils.log import error
 from os import environ, getcwd, listdir, remove
 from os.path import abspath, isdir, isfile, join, split
 from shutil import which
