@@ -275,12 +275,12 @@ def __handle_environment_file(type, environment_path_file_or_name):
 
     elif type == POETRY_TYPE:
         if __check_dependencies(POETRY_TYPE):
-            # poetry does not need the `environment_file`. It handle this by itself.
+            # check if a virtualenv has been created
             command = "poetry env info --path"
             try:
                 check_call(command.split(), stdout=DEVNULL)
             except CalledProcessError:
-                run(["poetry", "shell"])
+                run(["poetry", "install"], stdout=DEVNULL)
             __return_command(f"source $({command})/bin/activate")
             __print_activation_message(type)
 
