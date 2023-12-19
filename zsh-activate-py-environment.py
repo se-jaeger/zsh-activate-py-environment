@@ -7,7 +7,7 @@ from os import environ, getcwd, listdir, remove
 from os.path import abspath, isdir, isfile, join, split
 from shutil import which
 from sys import stderr
-from subprocess import check_call, run, CalledProcessError
+from subprocess import check_call, run, CalledProcessError, DEVNULL
 
 try:
     import yaml
@@ -278,7 +278,7 @@ def __handle_environment_file(type, environment_path_file_or_name):
             # poetry does not need the `environment_file`. It handle this by itself.
             command = "poetry env info --path"
             try:
-                check_call(command.split())
+                check_call(command.split(), stdout=DEVNULL)
             except CalledProcessError:
                 run(["poetry", "shell"])
             __return_command(f"source $({command})/bin/activate")
