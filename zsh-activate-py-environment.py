@@ -8,6 +8,7 @@ from os.path import abspath, isdir, isfile, join, split
 from shutil import which
 from sys import stderr
 from subprocess import check_call, run, CalledProcessError, DEVNULL
+import errno
 
 try:
     import yaml
@@ -118,7 +119,7 @@ def link(environment_type, name_or_path):
     if any([linked_env_file in listdir() for linked_env_file in LINKED_ENV_FILES]):
         __print_error_and_fail(
             "This directory is already linked! You can remove this by using 'unlink_py_environment'",
-            error_code=17
+            error_code=errno.EEXIST
         )
 
     if environment_type == VENV_TYPE:
@@ -167,7 +168,7 @@ def __print_success(message, flush):
     __print_information(message, flush=flush, color=GREEN)
 
 
-def __print_error_and_fail(message, error_code=1):
+def __print_error_and_fail(message, error_code=errno.EPERM):
     __print_information(message, flush=True, color=RED)
     sys.exit(error_code)
 
@@ -185,13 +186,13 @@ def __find_nearest_environment_file(
     ):
         __print_error_and_fail(
             f"Only the following environment types (given as `str`) are supported! - {', '.join(TYPE_TO_FILES.keys())}",
-            error_code=22
+            error_code=errno.EINVAL
         )
 
     if not isdir(directory):
         __print_error_and_fail(
             "Parameter `directory` need to be a valid directory!",
-            error_code=22
+            error_code=errno.EINVAL
         )
 
     directory_content = listdir(directory)
@@ -225,14 +226,14 @@ def __parse_conda_env_file_and_get_name(environment_file):
     except:
         __print_error_and_fail(
             f"Something went wrong! Is the environment file malformed? - Check: {environment_file}",
-            error_code=1
+            error_code=errno.EPERM
         )
 
 def __parse_linked_environment_file(linked_environment_file):
     if not isfile(linked_environment_file):
         __print_error_and_fail(
             f"Found linked environment file is not a file. Check: {linked_environment_file}",
-            error_code=2
+            error_code=errno.ENOENT
         )
 
     try:
@@ -241,13 +242,13 @@ def __parse_linked_environment_file(linked_environment_file):
     except:
         __print_error_and_fail(
             f"Something went wrong! Is the linked environment file malformed? - Check: {linked_environment_file}",
-            error_code=1
+            error_code=errno.EPERM
         )
 
     if environment_type not in SUPPORTED_ENVIRONMENT_TYPES:
         __print_error_and_fail(
             f"The given environment type in the linked environment file is not supported. Type: {environment_type} found in: {linked_environment_file}",
-            error_code=22
+            error_code=errno.EINVAL
         )
 
     return environment_type.strip(), environment_path_or_name.strip()
