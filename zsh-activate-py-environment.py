@@ -7,6 +7,7 @@ from os import environ, getcwd, listdir, remove
 from os.path import abspath, isdir, isfile, join, split
 from shutil import which
 from sys import stderr
+from subprocess import check_call, run, CalledProcessError, DEVNULL
 import errno
 
 try:
@@ -275,8 +276,13 @@ def __handle_environment_file(type, environment_path_file_or_name):
 
     elif type == POETRY_TYPE:
         if __check_dependencies(POETRY_TYPE):
-            # poetry does not need the `environment_file`. It handle this by itself.
-            __return_command("source $(poetry env info --path)/bin/activate")
+            # check if a virtualenv has been created
+            command = "poetry env info --path"
+            try:
+                check_call(command.split(), stdout=DEVNULL)
+            except CalledProcessError:
+                run(["poetry", "install"], stdout=DEVNULL)
+            __return_command(f"source $({command})/bin/activate")
             __print_activation_message(type)
 
     elif type == VENV_TYPE:
