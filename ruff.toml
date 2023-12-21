@@ -1,0 +1,9 @@
+target-version = "py38"
+line-length = 120
+fix = true
+extend-include = ["*.ipynb"]
+select = ["ALL"]
+ignore = ["D100", "D104", "ISC003", "TD003", "PTH", "ANN"]
+
+[pydocstyle]
+convention = "google"
