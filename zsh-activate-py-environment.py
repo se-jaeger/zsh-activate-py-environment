@@ -25,7 +25,7 @@ LINKED_TYPE = "linked"
 SUPPORTED_ENVIRONMENT_TYPES = [CONDA_TYPE, VENV_TYPE, POETRY_TYPE]
 
 LINKED_ENV_FILES = [".linked_env"]
-POETRY_FILES = ["poetry.lock"]
+POETRY_FILES = ["poetry.lock", "pyproject.toml"]
 VENV_FILES = ["venv", ".venv"]
 CONDA_FILES = ["environment.yaml", "environment.yml"]
 
