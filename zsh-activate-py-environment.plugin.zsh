@@ -9,7 +9,7 @@ function activate_py_environment_if_existing()
 
 function deactivate_py_environment()
 {
-    eval $(zsh-activate-py-environment.py "deactivate")
+    zsh-activate-py-environment.py "deactivate"
 }
 
 function link_py_environment()
