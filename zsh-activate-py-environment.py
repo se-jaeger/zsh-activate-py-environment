@@ -280,12 +280,12 @@ def __handle_environment_file(type_, environment_path_file_or_name):
 
     elif type_ == POETRY_TYPE:
         if __check_dependencies(POETRY_TYPE):
-            run(["poetry", "shell"])
             __print_activation_message(type_)
+            run(["poetry", "shell"])
 
     elif type_ == VENV_TYPE:
-        run(["source", f"{environment_path_file_or_name}/bin/activate"], check=False)
         __print_activation_message(type_)
+        run(["source", f"{environment_path_file_or_name}/bin/activate"], check=False)
 
     elif type_ == CONDA_TYPE:
         if __check_dependencies(CONDA_TYPE):
@@ -293,8 +293,8 @@ def __handle_environment_file(type_, environment_path_file_or_name):
             if isfile(environment_path_file_or_name):
                 environment_path_file_or_name = __parse_conda_env_file_and_get_name(environment_path_file_or_name)
 
-            run(["conda", "activate", f"{environment_path_file_or_name}"], check=False)
             __print_activation_message(TYPE_TO_FILES)
+            run(["conda", "activate", f"{environment_path_file_or_name}"], check=False)
 
     else:
         __print_error_and_fail(
