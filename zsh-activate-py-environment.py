@@ -280,19 +280,11 @@ def __handle_environment_file(type_, environment_path_file_or_name):
 
     elif type_ == POETRY_TYPE:
         if __check_dependencies(POETRY_TYPE):
-            # check if a virtualenv has been created
-            command = "poetry env info --path"
-            try:
-                check_call(command.split(), stdout=DEVNULL)  # noqa: S603
-
-            except CalledProcessError:
-                run(["poetry", "install"], stdout=DEVNULL, check=False)  # noqa: S603
-
-            __return_command(f"source $({command})/bin/activate")
+            run(["poetry", "shell"])
             __print_activation_message(type_)
 
     elif type_ == VENV_TYPE:
-        __return_command(f"source {environment_path_file_or_name}/bin/activate")
+        run(["source", f"{environment_path_file_or_name}/bin/activate"], check=False)
         __print_activation_message(type_)
 
     elif type_ == CONDA_TYPE:
@@ -301,7 +293,7 @@ def __handle_environment_file(type_, environment_path_file_or_name):
             if isfile(environment_path_file_or_name):
                 environment_path_file_or_name = __parse_conda_env_file_and_get_name(environment_path_file_or_name)
 
-            __return_command(f"conda activate {environment_path_file_or_name}")
+            run(["conda", "activate", f"{environment_path_file_or_name}"], check=False)
             __print_activation_message(TYPE_TO_FILES)
 
     else:

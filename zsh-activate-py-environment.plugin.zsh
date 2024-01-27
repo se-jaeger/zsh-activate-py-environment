@@ -4,7 +4,7 @@ PATH=$(dirname "$0"):$PATH
 function activate_py_environment_if_existing()
 {
     deactivate_py_environment
-    eval $(zsh-activate-py-environment.py "activate")
+    zsh-activate-py-environment.py "activate"
 }
 
 function deactivate_py_environment()
